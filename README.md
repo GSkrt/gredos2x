@@ -49,9 +49,10 @@ S podporo podatkovne baze bo model pridobil mo탑nost verzioniranja, kar je klju�
 Verzije morajo biti vezane na spremembe modela zaradi na훾rtovalskega procesa in verzije posodobitve modela. Nadgradnja v tej smeri sledi.
 
 ## TODO
+Po prioritetah: 
 
-* izvoz v pandapower format, 
-* izvoz in uvoz iz postgis z verzioniranjem ob posodobitvi modela, 
+* izvoz v pandapower format, CIM, OpenDSS, DigSilent etc.  z nadgradnjo funkcionalnosti in podatkovnega modela, 
+* izvoz in uvoz iz PostGIS podatkovnega stre탑nika z verzioniranjem ob posodobitvi modela vklju훾no z integracijo 훾asovnih serij in profilov odjema, 
 * izvoz v CIM in druge formate ...
 * izgradnja GIS->Model managerja za upravljanje verzij
 * SQL server integracija (pri pretvorbi je smiselno uporabiti klasi훾na GeoETL orodja)
