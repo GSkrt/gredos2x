@@ -17,7 +17,7 @@ osnovne statične analize pretokov moči v sistemu in je nastal leta 1991 pod ok
 
 ## Cilji tega paketa 
 
-Cilji tega orodja za transformacijo modela so preprosti: izvesti pretvorbo podatkovnega modela v drugo obliko, ki bo omogočala uporabo širšega spektra simulatorjev in njihovih funkcionalnosti, poleg tega pa omogočiti lažji prehod na integriran model z GIS distribucij. 
+Cilji tega orodja za transformacijo modela so preprosti: izvesti pretvorbo podatkovnega modela v druge oblike, ki bo omogočala uporabo širšega spektra simulatorjev in njihovih funkcionalnosti, poleg tega pa omogočiti lažji prehod na integriran model z GIS. 
 
 V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združeno datoteko temelječo na GPKG formatu . Nadgradnja pa bo v prihodnje sledila z izvozom in verzioniranjem v GIS. S prehodom na GIS podatkovno bazo bo omogočena tudi integracija modela z drugimi viri kot je npr. GIS, SCADA ali AMI, kar trenutni model ne omogoča. 
  
