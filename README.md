@@ -60,6 +60,18 @@ Po prioritetah:
 
 
 ## Primer izvoza v GPKG datoteko in branja iz nje 
+
+V spodnjem primeru je imenik v katerem se nahajajo Gredos datoteke vključno z geografskimi datotekami: tests/testnetwork/
+
+Povezave na osnovno mdb datoteko modela so izvedene tako z : 
+
+                'tests/testnetwork/testnetwork.mdb'
+                'tests/testnetwork/material_2000_v10.mdb'
+
+Rezultat je gpkg geografska datoteka z vsemi podatki združenimi v root imeniku z imenom : 'izvoz.gpkg'
+
+
+
 ```python
 from gredos2x.gredos2gpkg import Gredos2GPKG
 from gredos2x.gredos_gpkg2dataframes import GredosGPKG2df
