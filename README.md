@@ -63,7 +63,7 @@ Po prioritetah:
 
 V spodnjem primeru je imenik v katerem se nahajajo Gredos datoteke vključno z geografskimi datotekami: tests/testnetwork/
 
-Povezave na osnovno mdb datoteko modela so izvedene tako z : 
+Povezave na osnovno mdb datoteko modela so izvedene tako z naslednjimi povezavami: 
 
                 'tests/testnetwork/testnetwork.mdb'
                 'tests/testnetwork/material_2000_v10.mdb'
