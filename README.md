@@ -28,7 +28,7 @@ V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združe
 
 ## Opis funkcionalnosti 
 
-API se nahaja ([tukaj](https://github.com/GSkrt/gredos2x/blob/main/docs/html/gredos2x/index.html))
+Dokumentacija razredov se nahaja ([tukaj](https://gskrt.github.io/gredos2x/index.html))
 
 Vhodni podatki so: 
 
