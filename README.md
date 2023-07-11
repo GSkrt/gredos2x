@@ -52,7 +52,7 @@ Verzije morajo biti vezane na spremembe modela zaradi načrtovalskega procesa in
 Po prioritetah: 
 
 * izvoz v pandapower format, CIM, OpenDSS, DigSilent etc.  z nadgradnjo funkcionalnosti in podatkovnega modela, 
-* izvoz in uvoz iz PostGIS podatkovnega strežnika z verzioniranjem ob posodobitvi modela vključno z integracijo časovnih serij in profilov odjema, 
+* izvoz in uvoz iz PostGIS podatkovnega strežnika z verzioniranjem , 
 * izvoz v CIM in druge formate ...
 * izgradnja GIS->Model managerja za upravljanje verzij
 * SQL server integracija (pri pretvorbi je smiselno uporabiti klasična GeoETL orodja)
