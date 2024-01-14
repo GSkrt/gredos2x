@@ -1,4 +1,8 @@
-# GREDOS2X - Pretvornik Gredos modela v druge formate 
+# GREDOS2X (v 1.0.3) - Pretvornik Gredos modela v druge formate 
+
+Posodobitve : 
+
+Posodobljen PIP paket.  Dodan izvoz v PostGIS bazo. 
 
 gredos2x package aims to be a comprehensive set of tools to convert Slovenian (Gredos) distribution power system model to other formats. 
 As such is a simple conversion program to other formats such as open source load flow programs and other end points such as GIS. 
@@ -8,7 +12,7 @@ Gradnja izvoznih datotek za druge programske pakete je zaželena kot tudi širit
 
 Gredos2x je paket za pretvorbo Gredos podatkovnih virov v druge formate. Trenutno je implementiran le izvoz v gpkg (geografsko datotečno podatkovno bazo). 
 Cilj paketa je poenotiti izvoze v druge formate za simulacijo na osnovi odprtokodne iniciative, ki lahko omogočijo širitev analiz na druge platforme in 
-simulacijske programe. 
+simulacijske programe. S tem paketom je omogočena osnovna analiza. 
 
 ## Zgodovina modela: 
 
@@ -47,16 +51,6 @@ Vsi koraki v programskem paketu so zastavljeni tako, da se zaključujejo preko G
 S podporo podatkovne baze bo model pridobil možnost verzioniranja, kar je ključna lastnost načrtovalskega procesa. 
 
 Verzije morajo biti vezane na spremembe modela zaradi načrtovalskega procesa in verzije posodobitve modela. Nadgradnja v tej smeri sledi.
-
-## TODO
-Po prioritetah: 
-
-* izvoz v pandapower format, CIM, OpenDSS, DigSilent etc.  z nadgradnjo funkcionalnosti in podatkovnega modela, 
-* izvoz in uvoz iz PostGIS podatkovnega strežnika z verzioniranjem , 
-* izvoz v CIM in druge formate ...
-* izgradnja GIS->Model managerja za upravljanje verzij
-* SQL server integracija (pri pretvorbi je smiselno uporabiti klasična GeoETL orodja)
-
 
 
 ## Primer izvoza v GPKG datoteko in branja iz nje 
@@ -108,3 +102,21 @@ point = rd.preberi_geografsko_tabelo_iz_gpkg('POINT_geo',epsg_set='EPSG:3794')
 line = rd.preberi_geografsko_tabelo_iz_gpkg('LINE_geo',epsg_set='EPSG:3794')
 ```
 
+Dodan je izvoz v postgis bazo: 
+
+from gredos2x.gredos2pgsql import Gredos2PGSQL
+
+
+parametri_povezave = {
+                "drivername": "postgresql+psycopg2",
+                "username": "",
+                "password": "",
+                "host": "",
+                "port": "5432",
+                "database": ""
+            }
+
+g2pgsql = Gredos2PGSQL('tests/testnetwork/testnetwork.mdb', 'tests/testnetwork/material_2000_v10.mdb',parametri_povezave_pgsql=parametri_povezave)
+g2pgsql.pozeni_uvoz(True, pretvori_crs=True, set_crs='EPSG:3794')
+
+TODO: dokumentacija
