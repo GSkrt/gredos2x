@@ -40,6 +40,7 @@ Dokumentacija razredov se nahaja ([tukaj](https://gskrt.github.io/gredos2x/index
 Vhodni podatki so: 
 
 Zgrajena sta dva modula: gredos2gpkg(), za uvoz podatkov v geopackage in gredos_gpkg2dataframes(), ki pretvarja podatke nazaj v geopandas dataframe ali pandas dataframe. Širitev modela se lahko izvede kasneje po izgradnji modula gredos2postgis modula. 
+Dodatno se po novem podatke lahko izvaža v postgresql s postgis modulom. 
 
 gredos.mdb - osnovna datoteka projekta
 materiali.mdb - osnovna MDB datoteka z materiali modela
@@ -48,7 +49,7 @@ shp datoteke - LNODE.shp, POINT.shp , LINE.shp
 Pred začetkom izvoza je potrebno v Gredos programskem paketu zagnati izvoz geografije (Gredos izvoz v shp). Možen je tudi uvoz brez slednje, vendar je 
 za preglednost rezultatov te smiselno imeti v projektu, saj je prav podpora geografiji eden izmed ključnih elementov učinkovitega načrtovanja. 
 
-Pripravljen je tudi sistemski izvoz v PostgreSQL / PostGIS podatkovno bazo, ki vsebuje tudi nadgradnjo za verzioniranje modelov na nivoju le-te. 
+
 Ta trenutno še ni pripravljena za produkcijo zato ni del tega projekta. 
 Vsi koraki v programskem paketu so zastavljeni tako, da se zaključujejo preko GIS podprtega formata (GPKG), saj je ključ združiti vse informacije modela na enem mestu. 
 S podporo podatkovne baze bo model pridobil možnost verzioniranja, kar je ključna lastnost načrtovalskega procesa. 
