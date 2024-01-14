@@ -103,7 +103,7 @@ line = rd.preberi_geografsko_tabelo_iz_gpkg('LINE_geo',epsg_set='EPSG:3794')
 ```
 
 Dodan je izvoz v postgis bazo: 
-
+```python
 from gredos2x.gredos2pgsql import Gredos2PGSQL
 
 
@@ -118,5 +118,6 @@ parametri_povezave = {
 
 g2pgsql = Gredos2PGSQL('tests/testnetwork/testnetwork.mdb', 'tests/testnetwork/material_2000_v10.mdb',parametri_povezave_pgsql=parametri_povezave)
 g2pgsql.pozeni_uvoz(True, pretvori_crs=True, set_crs='EPSG:3794')
+```
 
 TODO: dokumentacija
