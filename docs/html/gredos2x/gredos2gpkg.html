@@ -75,6 +75,7 @@ class Gredos2GPKG:
         self.pot_materiali = pot_materiali
         self.gredos_file_name = os.path.basename(povezava_mdb).split(&#39;.&#39;)[0]
         self.spisek_tabel = [&#39;LNode&#39;, &#39;Node&#39;, &#39;Section&#39;, &#39;Transformer&#39;, &#39;Switching_device&#39;,&#39;Branch&#39;]
+        self.mdb_driver = &#34;Microsoft Access Driver (*.mdb, *.accdb)&#34;
         
         
         
@@ -94,7 +95,7 @@ class Gredos2GPKG:
         if sys.platform.startswith(&#39;win&#39;):
             #TODO: make ODBC driver check and auto discovery mechanism using pyodbc package listing...
             connection_string = (
-                u&#34;DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};&#34;
+                f&#34;DRIVER={self.mdb_driver};&#34;
                 f&#34;DBQ={povezava_mdb};&#34;
 
             )
@@ -353,6 +354,7 @@ insert_strategy (string)
         self.pot_materiali = pot_materiali
         self.gredos_file_name = os.path.basename(povezava_mdb).split(&#39;.&#39;)[0]
         self.spisek_tabel = [&#39;LNode&#39;, &#39;Node&#39;, &#39;Section&#39;, &#39;Transformer&#39;, &#39;Switching_device&#39;,&#39;Branch&#39;]
+        self.mdb_driver = &#34;Microsoft Access Driver (*.mdb, *.accdb)&#34;
         
         
         
@@ -372,7 +374,7 @@ insert_strategy (string)
         if sys.platform.startswith(&#39;win&#39;):
             #TODO: make ODBC driver check and auto discovery mechanism using pyodbc package listing...
             connection_string = (
-                u&#34;DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};&#34;
+                f&#34;DRIVER={self.mdb_driver};&#34;
                 f&#34;DBQ={povezava_mdb};&#34;
 
             )

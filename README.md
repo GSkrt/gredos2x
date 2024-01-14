@@ -106,7 +106,7 @@ Dodan je izvoz v postgis bazo:
 ```python
 from gredos2x.gredos2pgsql import Gredos2PGSQL
 
-
+ 
 parametri_povezave = {
                 "drivername": "postgresql+psycopg2",
                 "username": "",
