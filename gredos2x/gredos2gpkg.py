@@ -28,7 +28,6 @@ import io
 from shutil import which
 
 
-
 class Gredos2GPKG:
     """
         Gredos2GPKG je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo v GPKG datoteko, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.

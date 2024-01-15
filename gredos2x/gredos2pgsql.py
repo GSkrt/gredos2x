@@ -28,8 +28,6 @@ import sys, subprocess
 import io
 from shutil import which
 
-
-
 class Gredos2PGSQL:
     """
         Gredos2PGSQL je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo tabel v Postgresql, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.
@@ -47,7 +45,7 @@ class Gredos2PGSQL:
         
         Args: 
         
-            povezava_mdb (string) : povezava do mdb datoteke osnovnega modela
+            povezava_mdb (string) : povezava do mdb datoteke osnovnega modela (mdb)
             pot_materiali (string) : povezava do datoteke materialov (npr.material_2000_v10.mdb)
             parametri_povezave (dict) : parametri povezave postgresql (klasični zapis, port kot textualni vnos)
             
