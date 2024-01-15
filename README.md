@@ -1,8 +1,10 @@
-# GREDOS2X (v 1.0.3) - Pretvornik Gredos modela v druge formate 
+# GREDOS2X (v 1.0.5) - Pretvornik Gredos modela v druge formate 
 
 Posodobitve : 
 
 Posodobljen PIP paket.  Dodan izvoz v PostGIS bazo. 
+Preverjeno je bilo delovanje na Windows sistemu. 
+
 
 gredos2x package aims to be a comprehensive set of tools to convert Slovenian (Gredos) distribution power system model to other formats. 
 As such is a simple conversion program to other formats such as open source load flow programs and other end points such as GIS. 
