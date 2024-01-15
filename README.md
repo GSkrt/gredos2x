@@ -19,9 +19,12 @@ simulacijske programe. S tem paketom je omogočena osnovna analiza.
 Gredos je simulacijski program za izračune pretokov moči v omrežju, ki ga v Sloveniji uporabljamo za 
 osnovne statične analize pretokov moči v sistemu in je nastal leta 1991 pod okriljem EIMV. Kot tak je model celovit in ga uporabljamo za optimizacijo distribucijskega omrežja. Podatke distributerji v platformi redno posodabljajo v skladu z izdelavo dolgoročnih razvojnih načrtov (REDOS). Pomanjkljivost trenutnega modela je v integraciji z drugimi sistemi, saj je geografski del vezan na (dwg) datoteke, ki jih ni možno enostavno posodabljati z direktno integracijo v GIS. Celoten model se tako ročno posodablja. 
 
+Prav zaradi tega dolgoročno nima prihodnosti. 
+
 ## Cilji tega paketa 
 
 Cilji tega orodja za transformacijo modela so preprosti: izvesti pretvorbo podatkovnega modela v druge oblike, ki bo omogočala uporabo širšega spektra simulatorjev in njihovih funkcionalnosti, poleg tega pa omogočiti lažji prehod na integriran model z GIS. 
+Kljub pomanjkljivostim in dologoročno nezadostnim izhodiščem je to trenutno edini model, ki je poenoten za celotno Slovenijo in konvergira. 
 
 V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združeno datoteko temelječo na GPKG formatu . Nadgradnja pa bo v prihodnje sledila z izvozom in verzioniranjem v GIS. S prehodom na GIS podatkovno bazo bo omogočena tudi integracija modela z drugimi viri kot je npr. GIS, SCADA ali AMI, kar trenutni model ne omogoča. 
  
@@ -37,6 +40,7 @@ Dokumentacija razredov se nahaja ([tukaj](https://gskrt.github.io/gredos2x/index
 Vhodni podatki so: 
 
 Zgrajena sta dva modula: gredos2gpkg(), za uvoz podatkov v geopackage in gredos_gpkg2dataframes(), ki pretvarja podatke nazaj v geopandas dataframe ali pandas dataframe. Širitev modela se lahko izvede kasneje po izgradnji modula gredos2postgis modula. 
+Dodatno se po novem podatke lahko izvaža v postgresql s postgis modulom. 
 
 gredos.mdb - osnovna datoteka projekta
 materiali.mdb - osnovna MDB datoteka z materiali modela
@@ -45,7 +49,7 @@ shp datoteke - LNODE.shp, POINT.shp , LINE.shp
 Pred začetkom izvoza je potrebno v Gredos programskem paketu zagnati izvoz geografije (Gredos izvoz v shp). Možen je tudi uvoz brez slednje, vendar je 
 za preglednost rezultatov te smiselno imeti v projektu, saj je prav podpora geografiji eden izmed ključnih elementov učinkovitega načrtovanja. 
 
-Pripravljen je tudi sistemski izvoz v PostgreSQL / PostGIS podatkovno bazo, ki vsebuje tudi nadgradnjo za verzioniranje modelov na nivoju le-te. 
+
 Ta trenutno še ni pripravljena za produkcijo zato ni del tega projekta. 
 Vsi koraki v programskem paketu so zastavljeni tako, da se zaključujejo preko GIS podprtega formata (GPKG), saj je ključ združiti vse informacije modela na enem mestu. 
 S podporo podatkovne baze bo model pridobil možnost verzioniranja, kar je ključna lastnost načrtovalskega procesa. 
