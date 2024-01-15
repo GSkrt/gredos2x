@@ -63,9 +63,9 @@ class Gredos2PGSQL:
             
     """
     def __init__(self, povezava_mdb='', pot_materiali='', parametri_povezave_pgsql = {}, ime_sheme='public'):
-        self.mdb_povezava = povezava_mdb
-        self.pot_materiali = pot_materiali
-        self.gredos_file_name = os.path.basename(povezava_mdb).split('.')[0]
+        self.mdb_povezava = os.path.normpath(povezava_mdb)
+        self.pot_materiali = os.path.normpath(pot_materiali)
+        self.gredos_file_name = os.path.basename(self.mdb_povezava).split('.')[0]
         self.spisek_tabel = ['LNode', 'Node', 'Section', 'Transformer', 'Switching_device','Branch']
         self.mdb_driver = "Microsoft Access Driver (*.mdb, *.accdb)"
         self.ime_sheme = ime_sheme
