@@ -11,6 +11,6 @@ formats and distribution power system software keeping GEO information stored wi
 Model is still in use in Slovenia for basic MV long term studies and was developed on EIMV (ELEKTROINŠTITUT MILAN VIDMAR). 
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = 'Gregor Skrt'
 __credits__ = 'My mom (rip)'

@@ -20,6 +20,7 @@ import urllib
 from sqlalchemy import create_engine, exc
 from sqlalchemy.engine import URL
 from sqlalchemy.sql import text
+from sqlalchemy.types import LargeBinary
 import geopandas as gpd
 import pandas as pd
 from datetime import datetime
@@ -28,9 +29,9 @@ import sys, subprocess
 import io
 from shutil import which
 
-class Gredos2PGSQL:
+class Gredos2MSSQL:
     """
-        Gredos2PGSQL je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo tabel v Postgresql, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.
+        Gredos2MSSQL je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo tabel v MS SQL Server, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.
         Poleg definicije povezav in parametrov baze, je potrebno določiti tudi ime sheme, kamor se podatki shranjujejo. Gre za osnovni prenos podatkov in ne za podatkovno vodenje
         tabel v bazi.  
         
@@ -47,36 +48,37 @@ class Gredos2PGSQL:
         
             povezava_mdb (string) : povezava do mdb datoteke osnovnega modela (mdb)
             pot_materiali (string) : povezava do datoteke materialov (npr.material_2000_v10.mdb)
-            parametri_povezave (dict) : parametri povezave postgresql (klasični zapis, port kot textualni vnos)
+            parametri_povezave (dict) : parametri povezave mssql (klasični zapis)
             
-            parametri_povezave_pgsql = {
-                "drivername": "postgresql+psycopg2",
+            parametri_povezave_mssql = {
+                "drivername": "ODBC Driver 17 for SQL Server", # Ali drug ustrezen ODBC gonilnik
                 "username": "vpisi_uporabnisko_ime_s_pravicami_za_pisanje",
                 "password": "geslo",
                 "host": "naslov_streznika",
-                "port": "vrata", - pazi kot tekst !!! 
+                "port": 1433, 
                 "database": "podatkovna_baza"
             }
-            ime_sheme (string): ime sheme v postgresql bazi, kamor se bodo tabele izvozile
+            ime_sheme (string): ime sheme v mssql bazi, kamor se bodo tabele izvozile
             
     """
-    def __init__(self, povezava_mdb='', pot_materiali='', parametri_povezave_pgsql = {}, ime_sheme='public'):
+    def __init__(self, povezava_mdb='', pot_materiali='', parametri_povezave_mssql = {}, ime_sheme='ep'):
+        self.table_prefix = 'g2x_'
         self.mdb_povezava = os.path.normpath(povezava_mdb)
         self.pot_materiali = os.path.normpath(pot_materiali)
         self.gredos_file_name = os.path.basename(self.mdb_povezava).split('.')[0]
         self.spisek_tabel = ['LNode', 'Node', 'Section', 'Transformer', 'Switching_device','Branch']
         self.mdb_driver = "Microsoft Access Driver (*.mdb, *.accdb)"
         self.ime_sheme = ime_sheme
-        if parametri_povezave_pgsql: 
-            self.dict_povezava = parametri_povezave_pgsql
+        if parametri_povezave_mssql: 
+            self.dict_povezava = parametri_povezave_mssql
         else:             
             self.dict_povezava = {
-                "drivername": "postgresql+psycopg2",
+                "drivername": "ODBC Driver 17 for SQL Server", # Ali drug ustrezen ODBC gonilnik
                 "username": "vpisi_uporabnisko_ime_s_pravicami_za_pisanje",
                 "password": "geslo",
                 "host": "naslov_streznika",
-                "port": "vrata običajno 5432",
-                "database": "podatkovna_baza_na_strežniku"
+                "port": 1433, 
+                "database": "podatkovna_baza"
             }
         
         if sys.platform.startswith('win'):
@@ -94,14 +96,23 @@ class Gredos2PGSQL:
         else:  
             print(f"Platform {sys.platform} is not supported.")
             
-        # vzpostavimo povezavo še s postgresql 
-        ime_povezave_vidno_bazi = {"application_name": "gredos_etl"}
-        url_povezave = URL.create(**self.dict_povezava)
-        self.pgsql_engine = create_engine(url_povezave, connect_args=ime_povezave_vidno_bazi) 
+        # vzpostavimo povezavo še s mssql 
+        params = urllib.parse.quote_plus(
+            f"DRIVER={self.dict_povezava.get('drivername', '{ODBC Driver 17 for SQL Server}')};"
+            f"SERVER={self.dict_povezava.get('host')};"
+            f"DATABASE={self.dict_povezava.get('database')};"
+            f"UID={self.dict_povezava.get('username')};"
+            f"PWD={self.dict_povezava.get('password')};"
+            "APP=gredos_etl;"
+        )
+
+        connection_uri_mssql = f"mssql+pyodbc:///?odbc_connect={params}"
+
+        self.mssql_engine = create_engine(connection_uri_mssql)
         
         try:
     # Connect to the database and execute a simple query
-            with self.pgsql_engine.connect() as connection:
+            with self.mssql_engine.connect() as connection:
                 query = text("SELECT 1")
                 result = connection.execute(query)
                 if result.scalar() == 1:
@@ -113,7 +124,7 @@ class Gredos2PGSQL:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             
-        shema_exists = self.check_schema_exists(self.pgsql_engine, self.ime_sheme)
+        shema_exists = self.check_schema_exists(self.mssql_engine, self.ime_sheme)
             
         if shema_exists: 
             pass
@@ -142,61 +153,135 @@ class Gredos2PGSQL:
             print(f"An error occurred: {e}")
             return False
 
+    def _add_table_comment(self, connection, table_name, comment):
+        """Adds extended property description to the table."""
+        safe_comment = comment.replace("'", "''")
+        sql = f"""
+        EXEC sys.sp_addextendedproperty 
+          @name = N'MS_Description', 
+          @value = N'{safe_comment}', 
+          @level0type = N'SCHEMA', @level0name = N'{self.ime_sheme}', 
+          @level1type = N'TABLE',  @level1name = N'{table_name}';
+        """
+        try:
+            connection.execute(text(sql))
+        except Exception as e:
+            print(f"Warning: Could not add comment to table {table_name}: {e}")
 
-    def pd_dataframe_v_pgsql(self, pd_dataframe, pgsql_engine, table_name):
+
+    def pd_dataframe_v_mssql(self, pd_dataframe, mssql_engine, table_name):
         """Shrani datoteke v podatkovno bazo. 
 
         Args:
             pd_dataframe (pd.DataFrame): dataframe to transfer
-            pgsql_engine (sqlachemy engine): sqlalchemy postgresql engine 
+            mssql_engine (sqlachemy engine): sqlalchemy mssql engine 
             table_name (str):  table name
         """
         
-        pd_dataframe.to_sql(table_name, pgsql_engine, schema =self.ime_sheme, if_exists='replace', index=False)
+        prefixed_table_name = f"{self.table_prefix}{table_name}"
+        pd_dataframe.to_sql(prefixed_table_name, mssql_engine, schema =self.ime_sheme, if_exists='replace', index=False)
         
-        with pgsql_engine.connect() as connection:
-            comment = f"Source MDB: {self.mdb_povezava}".replace("'", "''")
-            sql = text(f'COMMENT ON TABLE "{self.ime_sheme}"."{table_name}" IS \'{comment}\';')
-            connection.execute(sql)
+        with mssql_engine.connect() as connection:
+            self._add_table_comment(connection, prefixed_table_name, f"Source MDB: {self.mdb_povezava}")
             connection.commit()
 
-    
+    def _geodf_to_mssql(self, gdf, table_name, srid):
+        """
+        Helper function to write a GeoDataFrame to SQL Server.
+        It converts geometries to WKB and uses raw SQL INSERTs. It's a helper to write to MSSQL table with geometry. 
+        """
+        prefixed_table_name = f"{self.table_prefix}{table_name}"
+        # Create a copy to avoid modifying the original GeoDataFrame
+        df = gdf.copy()
+        # Convert geometry to WKB and drop the original geometry column
+        df['geom_wkb'] = df['geometry'].apply(lambda g: g.wkb if g else None)
+        df = df.drop('geometry', axis=1)
 
-    def shp_to_pgsql(self,filepath_shp, ime_tabele, pretvori_crs = False, set_crs = 'EPSG:3794'):
-        """Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih. 
-            Uporablja spremenljivko razreda self.pgsql_engine za povezavo s postgresql bazo. Potrebno pa je definirati shemo v bazi, ki mora predhodno obstajati
+        # Reset index to write it as a regular column 'id' without creating a DB index
+        df.index.name = 'id'
+        df = df.reset_index()
+
+        with self.mssql_engine.connect() as connection:
+            trans = connection.begin()
+            try:
+                # 1. Upload data with WKB string using pandas.to_sql
+                df.to_sql(
+                    prefixed_table_name,
+                    connection,
+                    schema=self.ime_sheme,
+                    if_exists='replace',
+                    index=False,
+                    dtype={'geom_wkb': LargeBinary}
+                )
+
+                # 1.1 Set Primary Key on id
+                alter_col_sql = f"ALTER TABLE {self.ime_sheme}.{prefixed_table_name} ALTER COLUMN id BIGINT NOT NULL;"
+                connection.execute(text(alter_col_sql))
+
+                add_pk_sql = f"ALTER TABLE {self.ime_sheme}.{prefixed_table_name} ADD CONSTRAINT PK_{prefixed_table_name} PRIMARY KEY (id);"
+                connection.execute(text(add_pk_sql))
+
+                # 2. Add a GEOMETRY column to the new table
+                add_geom_col_sql = f"ALTER TABLE {self.ime_sheme}.{prefixed_table_name} ADD Shape GEOMETRY;"
+                connection.execute(text(add_geom_col_sql))
+           
+                # 3. Update the table, converting WKB to GEOMETRY
+                update_geom_sql = f"UPDATE {self.ime_sheme}.{prefixed_table_name} SET Shape = geometry::STGeomFromWKB(geom_wkb, {srid}) WHERE geom_wkb IS NOT NULL;"
+                connection.execute(text(update_geom_sql))
+               
+                # 4. Drop the temporary WKB column
+                drop_wkb_col_sql = f"ALTER TABLE {self.ime_sheme}.{prefixed_table_name} DROP COLUMN geom_wkb;"
+                connection.execute(text(drop_wkb_col_sql))
+
+                # 5. Create Spatial Index
+                if not gdf.empty and gdf['geometry'].notna().any():
+                    minx, miny, maxx, maxy = gdf.total_bounds
+                    # Expand bounds slightly to avoid boundary issues and ensure xmin < xmax
+                    pad = 100
+                    minx, miny, maxx, maxy = minx - pad, miny - pad, maxx + pad, maxy + pad
+                    
+                    spatial_index_sql = f"""
+                        CREATE SPATIAL INDEX [SI_{prefixed_table_name}] ON {self.ime_sheme}.{prefixed_table_name}(Shape)
+                        WITH ( BOUNDING_BOX = ( {minx}, {miny}, {maxx}, {maxy} ) );
+                    """
+                    connection.execute(text(spatial_index_sql))
+
+                self._add_table_comment(connection, prefixed_table_name, f"Source MDB: {self.mdb_povezava}")
+
+                trans.commit()
+            except Exception as e:
+                print(f"Error writing spatial data: {e}")
+                trans.rollback()
+                raise
+
+    def shp_to_mssql(self,filepath_shp, ime_tabele, pretvori_crs = False, set_crs = 'EPSG:3794'):
+        """Pretvorba iz SHP v geodataframe in uvoz v SQL Server.
+            Uporablja spremenljivko razreda self.mssql_engine za povezavo z bazo. Potrebno pa je definirati shemo v bazi, ki mora predhodno obstajati
 
         Args:
             filepath_shp (_type_): _lokacija shp datoteke_
             ime_tabele (_type_): Ime tabele za izvoz
-            ime_sheme (str, optional): Osnovna shema je nastavljena na 'public', ki je prisotna v vseh bazah. Defaults to 'public'.
             pretvori_crs (bool, optional): _Pretvori crs pri izvozu ?_. Defaults to False.
             set_crs (str, optional): Izhodni koordinatni sistem. Defaults to 'EPSG:3912'. Pretvorba je zanimiva predvsem v 'EPSG:3794'
         """
         shp = gpd.GeoDataFrame.from_file(filepath_shp, crs='EPSG:3912', encoding='cp1250')
         shp.set_crs('EPSG:3912', inplace=True)
+        srid = 3912
         if pretvori_crs: 
             shp.to_crs(crs=set_crs, inplace=True)
+            srid = int(set_crs.split(':')[-1])
         else: 
             set_crs = 'EPSG:3912' #pustimo crs v obliki, ki jo ima trenutno Gredos
         
-        
-        shp.to_postgis(ime_tabele, self.pgsql_engine, if_exists= 'replace', schema = self.ime_sheme, index = False, chunksize = 10000)
-        
-        with self.pgsql_engine.connect() as connection:
-            comment = f"Source MDB: {self.mdb_povezava}".replace("'", "''")
-            sql = text(f'COMMENT ON TABLE "{self.ime_sheme}"."{ime_tabele}" IS \'{comment}\';')
-            connection.execute(sql)
-            connection.commit()
+        self._geodf_to_mssql(shp, ime_tabele, srid)
 
-    def mdb_2_pgsql(self, show_progress = False):
+    def mdb_2_mssql(self, show_progress = False):
         """Osnovna funkcija za uvoz podatkov. Imena uvoznih tabel so predefinirana, prav tako format in tip podatkov uvoza. Pomembno, ker so nekateri modeli s šiframi v drugih formatih.
            Osnovni spisek imen tabel v mdb je definiran spremenljivki razreda spisek_tabel. 
 
             Args: 
             
                 show_progress(bool): V terminalu prikaže proces nalaganja posamezne tabele ali seznam vseh tabel (samo linux). 
-        
         """
         if os.path.exists(self.mdb_povezava):
             if sys.platform.startswith('win'): 
@@ -204,8 +289,8 @@ class Gredos2PGSQL:
                     if show_progress: 
                         print(f"Uvažam tabelo {ime_tabele_v_bazi} v Windows okolju.")
                     sql = text(f"select * from {ime_tabele_v_bazi}")
-                    pd_tabela = pd.read_sql_query(sql, self.connection_mdb)
-                    self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi)
+                    pd_tabela = pd.read_sql_query(sql, self.connection_mdb) 
+                    self.pd_dataframe_v_mssql(pd_tabela, self.mssql_engine, ime_tabele_v_bazi)
             if sys.platform.startswith('linux'):
                 available_tables = subprocess.Popen(["mdb-tables", self.mdb_povezava],
                                         stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
@@ -232,14 +317,14 @@ class Gredos2PGSQL:
                             types = {'BranchId': str}
                             
                         pd_tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, converters=types, encoding='cp1250', index_col=False, engine='python')
-                        self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi)
+                        self.pd_dataframe_v_mssql(pd_tabela, self.mssql_engine, ime_tabele_v_bazi)
                   
             
 
     def uvozi_podatke_materialov_mdb(self):
         """
-            Metoda razreda za uvoz podatkov materialov iz Gredos v postgresql bazo. Datoteke na Windows platformi beremo z {Microsoft Access Driver (*.mdb, *.accdb)}, 
-            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools. 
+            Metoda razreda za uvoz podatkov materialov iz Gredos v MS SQL Server bazo. Datoteke na Windows platformi beremo z {Microsoft Access Driver (*.mdb, *.accdb)}, 
+            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools.
             
             Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults 
             
@@ -257,8 +342,8 @@ class Gredos2PGSQL:
 
             try:
                 #stlačim še materiale v postgresql
-                material = pd.read_sql_query(sql_material, con_material)
-                self.pd_dataframe_v_pgsql(material, self.pgsql_engine, 'MATERIAL')
+                material = pd.read_sql_query(sql_material, con_material, dtype=str)
+                self.pd_dataframe_v_mssql(material, self.mssql_engine, 'MATERIAL')
 
                 return True
             except Exception as e:
@@ -268,14 +353,14 @@ class Gredos2PGSQL:
                                     stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
             
             tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, encoding='cp1250', index_col=False)
-            self.pd_dataframe_v_pgsql(tabela, self.pgsql_engine, 'MATERIAL')
+            self.pd_dataframe_v_mssql(tabela, self.mssql_engine, 'MATERIAL')
             
             
 
     def uvozi_geografske_datoteke(self, show_progress=False, pretvori_crs = False, set_crs='EPSG:3794'):
         """
         
-         Uvozi podatke SHP gredos  kot  geografsko plast  v  postgresql. 
+         Uvozi podatke SHP gredos  kot  geografsko plast  v  MS SQL Server. 
          v Default EPSG koda je 3912 (GK48), med prenosom je možna pretvorba iz tega v drug koordinatni sistem, ki je kompatibilen z GIS ali 
          drugimi prikazovalniki, ki imajo npr. podlago za prikaz v WGS84. S tem smo pokrili večino uporabniških primerov. 
         
@@ -300,21 +385,21 @@ class Gredos2PGSQL:
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='POINT_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_mssql(os.path.join(imenik_projekta,file), ime_tabele='POINT_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
                     
             if 'LINE' in splitfile[0]:
                 i = i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LINE_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_mssql(os.path.join(imenik_projekta,file), ime_tabele='LINE_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
                     
             if 'LNODE' in splitfile[0]:
                 i=i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LNODE_geo', pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_mssql(os.path.join(imenik_projekta,file), ime_tabele='LNODE_geo', pretvori_crs=pretvori_crs, set_crs=set_crs)
                    
         if i == 3:
             return False
@@ -336,7 +421,7 @@ class Gredos2PGSQL:
         """
         
         uvozeno = self.uvozi_geografske_datoteke(show_progress=True, pretvori_crs=pretvori_crs, set_crs=set_crs)
-        self.mdb_2_pgsql(show_progress=True)
+        self.mdb_2_mssql(show_progress=True)
         self.uvozi_podatke_materialov_mdb()
         
 

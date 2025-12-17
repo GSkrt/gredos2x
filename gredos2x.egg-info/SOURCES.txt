@@ -1,0 +1,13 @@
+LICENSE.txt
+README.md
+setup.py
+gredos2x/__init__.py
+gredos2x/gredos2gpkg.py
+gredos2x/gredos2mssql.py
+gredos2x/gredos2pgsql.py
+gredos2x/gredos_gpkg2dataframes.py
+gredos2x.egg-info/PKG-INFO
+gredos2x.egg-info/SOURCES.txt
+gredos2x.egg-info/dependency_links.txt
+gredos2x.egg-info/requires.txt
+gredos2x.egg-info/top_level.txt

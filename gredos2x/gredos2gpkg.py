@@ -88,7 +88,7 @@ class Gredos2GPKG:
         #connection = engine.connect() # pandas using engine and not connection 2022
         pd_dataframe.to_sql(table_name, engine, if_exists='replace', index=False)
 
-    def shp_to_geopackage(self,filepath_shp, geopackage_pth, layer_name, pretvori_crs = False, set_crs = 'EPSG:3794'):
+    def shp_to_geopackage(self,filepath_shp, geopackage_pth, layer_name, pretvori_crs = False, set_crs = 'EPSG:3912'):
         """ Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih. 
 
         Args:
@@ -102,9 +102,8 @@ class Gredos2GPKG:
         shp.set_crs('EPSG:3912', inplace=True)
         if pretvori_crs: 
             shp.to_crs(crs=set_crs, inplace=True)
-        else: 
-            set_crs = 'EPSG:3912' #pustimo crs v obliki, ki jo ima trenutno Gredos
-        shp.to_file(geopackage_pth, driver='GPKG', layer=layer_name, crs=set_crs,  encoding='cp1250')
+            
+        shp.to_file(geopackage_pth, driver='GPKG', layer=layer_name, encoding='cp1250')
 
     def uvozi_podatke_mdb(self, show_progress = False):
         """Osnovna funkcija za uvoz podatkov. Imena uvoznih tabel so predefinirana, prav tako format in tip podatkov uvoza. Pomembno, ker so nekateri modeli s šiframi v drugih formatih.

@@ -1,0 +1,7 @@
+geopandas
+fiona
+sqlalchemy
+pyodbc
+sqlalchemy-access
+psycopg2-binary
+geoalchemy2

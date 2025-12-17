@@ -1,4 +1,35 @@
-# GREDOS2X (v 2.0.0) - Pretvornik Gredos modela v druge formate 
+Metadata-Version: 2.4
+Name: gredos2x
+Version: 2.0.0
+Summary: gredos2x is a format converter for Gredos power system model built by EIMV in 1991. This tool is a set of Python tools, for export to other formats and simulators and supports GIS data conversion from Gredos.
+Home-page: https://github.com/GSkrt/gredos2x
+Author: Gregor Skrt
+Author-email: gregor.skrt@gmail.com
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: geopandas
+Requires-Dist: fiona
+Requires-Dist: sqlalchemy
+Requires-Dist: pyodbc
+Requires-Dist: sqlalchemy-access
+Requires-Dist: psycopg2-binary
+Requires-Dist: geoalchemy2
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
+
+# GREDOS2X (v 1.0.5) - Pretvornik Gredos modela v druge formate 
 
 Posodobitve : 
 
@@ -32,11 +63,7 @@ V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združe
  
 ##  Instalacija
 
-        pip install gredos2x (trenutno zadnja verzija 2.0.0 ni še na voljo na pip (17.12.2025))
-
-        Za lokalno instalacijo iz dist/ mape 
-       ``` # pip install dist/gredos2x-2.0.0-py3-none-any.whl ```
-
+        pip install gredos2x
 
 
 ## Opis funkcionalnosti 
@@ -46,19 +73,21 @@ Dokumentacija razredov se nahaja ([tukaj](https://gskrt.github.io/gredos2x/index
 Vhodni podatki so: 
 
 Zgrajena sta dva modula: gredos2gpkg(), za uvoz podatkov v geopackage in gredos_gpkg2dataframes(), ki pretvarja podatke nazaj v geopandas dataframe ali pandas dataframe. Širitev modela se lahko izvede kasneje po izgradnji modula gredos2postgis modula. 
-
 Dodatno se po novem podatke lahko izvaža v postgresql s postgis modulom. 
-Vpeljan je izvoz v SQL Server podatkovno bazo, v primeru, da bi bilo to potrebno (npr. za integracije na nekaterih GIS platformah)
 
 gredos.mdb - osnovna datoteka projekta
-materiali.mdb - osnovna MDB datoteka z materiali modela (Običajno v defaults imaniku Gredos)
-shp datoteke - LNODE.shp, POINT.shp , LINE.shp - te datoteke **je potrebno izvoziti pred zagonom izvoza**
+materiali.mdb - osnovna MDB datoteka z materiali modela
+shp datoteke - LNODE.shp, POINT.shp , LINE.shp
 
 Pred začetkom izvoza je potrebno v Gredos programskem paketu zagnati izvoz geografije (Gredos izvoz v shp). Možen je tudi uvoz brez slednje, vendar je 
 za preglednost rezultatov te smiselno imeti v projektu, saj je prav podpora geografiji eden izmed ključnih elementov učinkovitega načrtovanja. 
 
 
+Ta trenutno še ni pripravljena za produkcijo zato ni del tega projekta. 
 Vsi koraki v programskem paketu so zastavljeni tako, da se zaključujejo preko GIS podprtega formata (GPKG), saj je ključ združiti vse informacije modela na enem mestu. 
+S podporo podatkovne baze bo model pridobil možnost verzioniranja, kar je ključna lastnost načrtovalskega procesa. 
+
+Verzije morajo biti vezane na spremembe modela zaradi načrtovalskega procesa in verzije posodobitve modela. Nadgradnja v tej smeri sledi.
 
 
 ## Primer izvoza v GPKG datoteko in branja iz nje 
@@ -128,4 +157,4 @@ g2pgsql = Gredos2PGSQL('tests/testnetwork/testnetwork.mdb', 'tests/testnetwork/m
 g2pgsql.pozeni_uvoz(True, pretvori_crs=True, set_crs='EPSG:3794')
 ```
 
-
+TODO: dokumentacija
