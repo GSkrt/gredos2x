@@ -74,7 +74,7 @@ class Gredos2GPKG:
             self.connection = create_engine(connection_uri).connect()
             
         else: 
-            print(f"Platform {sys.platform} is not supported.")
+            print(f"Platform {sys.platform} is not tested for GREDOS to GPKG conversion.")
 
     def pd_dataframe_to_gpkg(self, pd_dataframe, geopackage_pth, table_name):
         """Transfer pandas dataframe to geopackage.
