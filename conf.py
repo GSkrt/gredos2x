@@ -18,7 +18,8 @@ extensions = [
     'sphinx.ext.autodoc',  # Automatically document Python code
     'sphinx.ext.napoleon', # Support for Google and NumPy style docstrings
     'sphinx.ext.viewcode', # Add links to highlighted source code
-    'sphinx.ext.todo',     # Support for todo notes
+    'sphinx.ext.todo', 
+    'sphinx.ext.githubpages',
 ]
 
 templates_path = ['_templates']

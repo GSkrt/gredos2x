@@ -58,7 +58,7 @@ class Gredos2MSSQL:
                 "port": 1433, 
                 "database": "podatkovna_baza"
             }
-            ime_sheme (string): ime sheme v mssql bazi, kamor se bodo tabele izvozile
+            ime_sheme (string): ime sheme v mssql bazi, kamor se bodo tabele izvozile (shema mora predhodno obstajati)
             
     """
     def __init__(self, povezava_mdb='', pot_materiali='', parametri_povezave_mssql = {}, ime_sheme='ep'):
@@ -414,7 +414,7 @@ class Gredos2MSSQL:
             return True
 
     def pozeni_uvoz(self, show_progress = False, pretvori_crs = False, set_crs = 'EPSG:3794'):
-        """ Izvozi vse podatke Gredos v lokalno posgis podatkovno bazo, pret tem je potrebno definirati shemo v katero bomo izvažali podatke. 
+        """ Izvozi vse podatke Gredos v MSSQL  podatkovno bazo, pred tem je potrebno definirati shemo v katero bomo izvažali podatke. 
             Omogoča tudi pretvorbo koordinatnega sistema v druge oblike npr. WGS84 za spletne aplikacije ali EPSG:3794 (D96/TM Slovenski koordinatni sistem)
 
 
