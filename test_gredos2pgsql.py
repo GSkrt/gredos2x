@@ -10,7 +10,7 @@ parametri_povezave = {
                 "drivername": "postgresql+psycopg2",
                 "username": "postgres",
                 "password": "your password",
-                "host": "localhost",
+
                 "port": "5432",
                 "database": "postgres"
             }
