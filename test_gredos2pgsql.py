@@ -9,7 +9,7 @@ from gredos2x.gredos2pgsql import Gredos2PGSQL
 parametri_povezave = {
                 "drivername": "postgresql+psycopg2",
                 "username": "postgres",
-                "password": "kogojeva50",
+                "password": "your password",
                 "host": "localhost",
                 "port": "5432",
                 "database": "postgres"
