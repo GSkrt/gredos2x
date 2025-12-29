@@ -328,6 +328,9 @@ class Gredos2MSSQL:
             
             Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults 
             
+            Returns:
+                True, če je uvoz uspešen, sicer False.
+            
         """
         
         if sys.platform.startswith('win'): 
@@ -348,12 +351,16 @@ class Gredos2MSSQL:
                 return True
             except Exception as e:
                 return False
+            
         if sys.platform.startswith('lin'): 
             contents = subprocess.Popen(["mdb-export", self.pot_materiali,'MATERIAL'],
                                     stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-            
-            tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, encoding='cp1250', index_col=False)
-            self.pd_dataframe_v_mssql(tabela, self.mssql_engine, 'MATERIAL')
+            try: 
+                tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, encoding='cp1250', index_col=False)
+                self.pd_dataframe_v_mssql(tabela, self.mssql_engine, 'MATERIAL')
+                return True
+            except Exception as e:
+                return False
             
             
 
