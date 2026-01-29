@@ -1,4 +1,4 @@
-# GREDOS2X (v 2.0.0) - Pretvornik Gredos modela v druge formate 
+# GREDOS2X (v 2.0.1) - Pretvornik Gredos modela v druge formate 
 
 Posodobitve : 
 

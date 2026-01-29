@@ -9,7 +9,7 @@
 project = 'gredos2x'
 copyright = '2023, Gregor' # Adjust the year and author as needed
 author = 'Gregor' # Your name or organization
-release = '0.1.0' # Your project's version
+release = '2.0.1' # Your project's version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

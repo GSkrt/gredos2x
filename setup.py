@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='gredos2x', # Ensure this matches your package name on PyPI
-    version='2.0.0',
+    version='2.0.1',
     author='Gregor Skrt',
     author_email='gregor.skrt@gmail.com',
     description='gredos2x is a format converter for Gredos power system model built by EIMV in 1991. This tool is a set of Python tools, for export to other formats and simulators and supports GIS data conversion from Gredos.',
