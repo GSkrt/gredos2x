@@ -30,10 +30,6 @@ from shutil import which
 # Explicitly import the sqlalchemy_access.pyodbc module.
 # This can help SQLAlchemy discover the dialect if there are environment issues,
 # or provide a more direct ImportError if the module is truly missing.
-try:
-    import sqlalchemy_access.pyodbc
-except ImportError:
-    print("Warning: The 'sqlalchemy-access' package or its 'pyodbc' component is not installed or accessible. Please ensure 'pip install sqlalchemy-access pyodbc'.")
 
 class Gredos2GPKG:
     """
