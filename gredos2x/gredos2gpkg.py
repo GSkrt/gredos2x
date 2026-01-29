@@ -55,7 +55,12 @@ class Gredos2GPKG:
         
         if povezava_gpkg == '' and povezava_mdb != '':
             # Default GeoPackage path in 'intmodel' subdirectory relative to the current working directory
+            # if folder doasn't exist create folder
+            output_dir = 'intmodel'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
             self.gpkg_path = os.path.abspath(os.path.join('intmodel', self.gredos_file_name + '.gpkg'))
+            
         else:
             # Use the provided GeoPackage path, making it absolute for robustness
             self.gpkg_path = os.path.abspath(povezava_gpkg)
@@ -214,10 +219,14 @@ class Gredos2GPKG:
             except Exception as e:
                 return False
         if sys.platform.startswith('lin'): 
+            
+            # poglej encodinge tle, pomoje neki ne štima tudi na Linux v dol primerih
             contents = subprocess.Popen(["mdb-export", self.pot_materiali,'MATERIAL'],
                                     stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
             
             tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, encoding='cp1250', index_col=False)
+            
+            
             self.pd_dataframe_to_gpkg(tabela, self.gpkg_path, 'MATERIAL')
             
             
@@ -287,4 +296,4 @@ class Gredos2GPKG:
         self.uvozi_podatke_materialov_mdb()
         self.zgradi_indekse_tabelam()
 
-        return uvozen
+        return uvozeno
