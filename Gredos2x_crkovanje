@@ -1,0 +1,105 @@
+import geopandas as gpd
+import pandas as pd
+import sqlite3
+import os
+import gc
+from gredos2x.gredos2gpkg import Gredos2GPKG
+
+# --- 1. NASTAVITVE POTI ---
+mapa_projekta = r'C:\Users\EM4403\OneDrive - Elektro Maribor\Namizje\GPKG_2'
+pot_mdb_mreza = os.path.join(mapa_projekta, 'SNO EMB 20.01.2026.mdb')
+pot_mdb_material = os.path.join(mapa_projekta, 'material_2000_v10.mdb')
+
+# Definiramo pare (EPSG koda, Ime datoteke)
+izvozi = [
+    ('EPSG:3794', 'izvoz.gpkg'),
+    ('EPSG:4326', 'izvoz_wgs84.gpkg')
+]
+
+def pametni_popravek_besedila(besedilo):
+    if not isinstance(besedilo, str): return besedilo
+    try:
+        return besedilo.encode('latin1').decode('cp1250')
+    except:
+        return besedilo
+
+def procesiraj_izvoz(epsg, koncna_datoteka):
+    print(f"\n>>> ZAČETEK PROCESIRANJA: {epsg} -> {koncna_datoteka}")
+    
+    zacasna = os.path.join(mapa_projekta, f"temp_{epsg.replace(':', '')}.gpkg")
+    koncna = os.path.join(mapa_projekta, koncna_datoteka)
+
+    if os.path.exists(zacasna): os.remove(zacasna)
+    if os.path.exists(koncna): os.remove(koncna)
+
+    # A) UVOZ IZ ACCESSA
+    print(f"   1. Uvažam iz Accessa v {epsg}...")
+    gu = Gredos2GPKG(pot_mdb_mreza, pot_mdb_material, zacasna)
+    gu.pozeni_uvoz(True, pretvori_crs=True, set_crs=epsg)
+
+    # --- VARNO ČIŠČENJE POVEZAV ---
+    if hasattr(gu, 'engine'): gu.engine.dispose()
+    if hasattr(gu, 'connection'): gu.connection.close()
+    del gu
+    gc.collect()
+
+    # B) POPRAVEK ŠUMNIKOV IN STATISTIKA
+    print(f"   2. Popravljam šumnike in preverjam vrstice...")
+    geografske = ['POINT_geo', 'LINE_geo', 'LNODE_geo']
+    statistika = []
+    
+    # 1. Obdelava geografskih plasti
+    for plast in geografske:
+        try:
+            # Preštejemo vrstice v začasni datoteki
+            with sqlite3.connect(zacasna) as conn:
+                st_vhod = pd.read_sql_query(f"SELECT COUNT(*) as st FROM {plast}", conn)['st'][0]
+            
+            gdf = gpd.read_file(zacasna, layer=plast, encoding='cp1250')
+            gdf.to_file(koncna, layer=plast, driver="GPKG", engine="pyogrio")
+            
+            statistika.append({'Tabela': plast, 'VHOD': st_vhod, 'IZHOD': len(gdf), 'Status': '✅ OK'})
+        except Exception as e:
+            statistika.append({'Tabela': plast, 'VHOD': 0, 'IZHOD': 0, 'Status': f'❌ Napaka: {str(e)[:20]}'})
+
+    # 2. Obdelava tehničnih tabel
+    with sqlite3.connect(zacasna) as pov_v, sqlite3.connect(koncna) as pov_i:
+        vse = pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", pov_v)['name'].tolist()
+        za_prenos = [t for t in vse if not t.startswith(('gpkg_', 'rtree_', 'sqlite_')) and t not in geografske]
+
+        for tab in za_prenos:
+            try:
+                # Štejemo vhodne vrstice
+                st_vhod = pd.read_sql_query(f"SELECT COUNT(*) as st FROM {tab}", pov_v)['st'][0]
+                
+                df = pd.read_sql_query(f"SELECT * FROM {tab}", pov_v)
+                for col in df.select_dtypes(include=['object']).columns:
+                    df[col] = df[col].apply(pametni_popravek_besedila)
+                
+                df.to_sql(tab, pov_i, index=False, if_exists='replace')
+                statistika.append({'Tabela': tab, 'VHOD': st_vhod, 'IZHOD': len(df), 'Status': '✅ OK'})
+            except Exception as e:
+                statistika.append({'Tabela': tab, 'VHOD': 0, 'IZHOD': 0, 'Status': f'❌ Napaka: {str(e)[:20]}'})
+
+    # C) IZPIS POROČILA ZA TRENUTNI EPSG
+    print("\n" + "-"*65)
+    print(f"{'IME TABELE':<25} | {'VHOD':<10} | {'IZHOD':<10} | {'STATUS'}")
+    print("-" * 65)
+    for vrstica in statistika:
+        print(f"{vrstica['Tabela']:<25} | {vrstica['VHOD']:<10} | {vrstica['IZHOD']:<10} | {vrstica['Status']}")
+    print("-" * 65)
+
+    # Čiščenje začasne datoteke
+    try:
+        os.remove(zacasna)
+        print(f"   3. Začasna datoteka pobrisana.")
+    except:
+        print(f"   3. Opozorilo: Začasna datoteka ostaja (OneDrive/Win blokada).")
+
+# --- 2. ZAGON ---
+for epsg, dat in izvozi:
+    procesiraj_izvoz(epsg, dat)
+
+print("\n" + "="*65)
+print("VSE PRETVORBE USPEŠNO ZAKLJUČENE!")
+print("="*65)
