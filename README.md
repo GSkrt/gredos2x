@@ -32,7 +32,7 @@ V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združe
  
 ##  Instalacija
 
-        pip install gredos2x (trenutno zadnja verzija 2.0.0 ni še na voljo na pip (17.12.2025))
+        pip install gredos2x (naložen na pypi)
 
         Za lokalno instalacijo iz dist/ mape 
        ``` # pip install dist/gredos2x-2.0.0-py3-none-any.whl ```
