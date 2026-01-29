@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: gredos2x
-Version: 2.0.1
+Version: 2.0.2
 Summary: gredos2x is a format converter for Gredos power system model built by EIMV in 1991. This tool is a set of Python tools, for export to other formats and simulators and supports GIS data conversion from Gredos.
 Home-page: https://github.com/GSkrt/gredos2x
 Author: Gregor Skrt
