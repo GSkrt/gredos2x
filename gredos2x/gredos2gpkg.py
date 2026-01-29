@@ -287,4 +287,4 @@ class Gredos2GPKG:
         self.uvozi_podatke_materialov_mdb()
         self.zgradi_indekse_tabelam()
 
-        return uvozeno
+        return uvozen
