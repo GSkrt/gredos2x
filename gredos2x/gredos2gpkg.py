@@ -27,6 +27,13 @@ import sys, subprocess
 import io
 from shutil import which
 
+# Explicitly import the sqlalchemy_access.pyodbc module.
+# This can help SQLAlchemy discover the dialect if there are environment issues,
+# or provide a more direct ImportError if the module is truly missing.
+try:
+    import sqlalchemy_access.pyodbc
+except ImportError:
+    print("Warning: The 'sqlalchemy-access' package or its 'pyodbc' component is not installed or accessible. Please ensure 'pip install sqlalchemy-access pyodbc'.")
 
 class Gredos2GPKG:
     """
@@ -51,10 +58,11 @@ class Gredos2GPKG:
         
         
         if povezava_gpkg == '' and povezava_mdb != '':
-            self.gpkg_path = os.path.join('intmodel',
-                                            self.gredos_file_name + '.gpkg')
+            # Default GeoPackage path in 'intmodel' subdirectory relative to the current working directory
+            self.gpkg_path = os.path.abspath(os.path.join('intmodel', self.gredos_file_name + '.gpkg'))
         else:
-            self.gpkg_path = os.path.relpath(povezava_gpkg)
+            # Use the provided GeoPackage path, making it absolute for robustness
+            self.gpkg_path = os.path.abspath(povezava_gpkg)
 
         # počistimo staro datoteko, če obstaja in ima isto ime. 
         if os.path.exists(self.gpkg_path):
@@ -62,6 +70,11 @@ class Gredos2GPKG:
                 os.remove(self.gpkg_path)
             except Exception as e:
                 pass
+
+        # Ensure the directory for the GeoPackage file exists
+        output_dir = os.path.dirname(self.gpkg_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
         
         if sys.platform.startswith('win'):
             #TODO: make ODBC driver check and auto discovery mechanism using pyodbc package listing...
@@ -88,7 +101,7 @@ class Gredos2GPKG:
         #connection = engine.connect() # pandas using engine and not connection 2022
         pd_dataframe.to_sql(table_name, engine, if_exists='replace', index=False)
 
-    def shp_to_geopackage(self,filepath_shp, geopackage_pth, layer_name, pretvori_crs = False, set_crs = 'EPSG:3912'):
+    def shp_to_geopackage(self,filepath_shp, geopackage_pth, layer_name, pretvori_crs = False, set_crs = 'EPSG:3912', input_encoding='cp1250'):
         """ Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih. 
 
         Args:
@@ -97,13 +110,14 @@ class Gredos2GPKG:
             layer_name (_type_): ime plasti v gpkg datoteki 
             crs_conversion (bool, optional): Pretvori v drug koordinatni sistem (True/False). Defaults to False.
             set_crs (str, optional): Izhodni koordinatni sistem. Defaults to 'EPSG:3912'. Pretvorba je zanimiva predvsem v 'EPSG:3794'
+            input_encoding (str, optional): Encoding for the input SHP file. Defaults to 'cp1250'.
         """
-        shp = gpd.GeoDataFrame.from_file(filepath_shp, crs='EPSG:3912', encoding='cp1250')
+        shp = gpd.GeoDataFrame.from_file(filepath_shp, crs='EPSG:3912', encoding=input_encoding)
         shp.set_crs('EPSG:3912', inplace=True)
         if pretvori_crs: 
             shp.to_crs(crs=set_crs, inplace=True)
             
-        shp.to_file(geopackage_pth, driver='GPKG', layer=layer_name, encoding='cp1250')
+        shp.to_file(geopackage_pth, driver='GPKG', layer=layer_name, encoding='utf-8')
 
     def uvozi_podatke_mdb(self, show_progress = False):
         """Osnovna funkcija za uvoz podatkov. Imena uvoznih tabel so predefinirana, prav tako format in tip podatkov uvoza. Pomembno, ker so nekateri modeli s šiframi v drugih formatih.
@@ -240,20 +254,20 @@ class Gredos2GPKG:
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta,file), self.gpkg_path, 'POINT_geo',encoding='cp1250',pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta,file), self.gpkg_path, 'POINT_geo',input_encoding='cp1250',pretvori_crs=pretvori_crs, set_crs=set_crs)
             if 'LINE' in splitfile[0]:
                 i = i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LINE_geo',encoding='cp1250', pretvori_crs=pretvori_crs,set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LINE_geo',input_encoding='cp1250', pretvori_crs=pretvori_crs,set_crs=set_crs)
 
             if 'LNODE' in splitfile[0]:
                 i=i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LNODE_geo', encoding='cp1250', pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LNODE_geo', input_encoding='cp1250', pretvori_crs=pretvori_crs, set_crs=set_crs)
         if i == 3:
             return False
         else:
