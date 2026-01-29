@@ -66,9 +66,9 @@ class Gredos2GPKG:
         if sys.platform.startswith('win'):
             #TODO: make ODBC driver check and auto discovery mechanism using pyodbc package listing...
             connection_string = (
-                f"DRIVER={self.mdb_driver};"
+                f"DRIVER={{{self.mdb_driver}}};"  # Braces for exact match
                 f"DBQ={povezava_mdb};"
-
+                "Str_Ansi=no;"  # Key: Use Unicode (WCHAR) fetches, not ANSI/CP1250
             )
             connection_uri = f"access+pyodbc:///?odbc_connect={urllib.parse.quote_plus(connection_string)}"
             self.connection = create_engine(connection_uri).connect()
@@ -121,6 +121,7 @@ class Gredos2GPKG:
                     sql = text(f"select * from {ime_tabele}")
                     tabela = pd.read_sql_query(sql, self.connection)
                     self.pd_dataframe_to_gpkg(tabela, self.gpkg_path, ime_tabele)
+                    
             if sys.platform.startswith('linux'):
                 available_tables = subprocess.Popen(["mdb-tables", self.mdb_povezava],
                                         stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
@@ -239,20 +240,20 @@ class Gredos2GPKG:
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta,file), self.gpkg_path, 'POINT_geo', pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta,file), self.gpkg_path, 'POINT_geo',encoding='cp1250',pretvori_crs=pretvori_crs, set_crs=set_crs)
             if 'LINE' in splitfile[0]:
                 i = i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LINE_geo', pretvori_crs=pretvori_crs,set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LINE_geo',encoding='cp1250', pretvori_crs=pretvori_crs,set_crs=set_crs)
 
             if 'LNODE' in splitfile[0]:
                 i=i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LNODE_geo', pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_geopackage(os.path.join(imenik_projekta, file), self.gpkg_path, 'LNODE_geo', encoding='cp1250', pretvori_crs=pretvori_crs, set_crs=set_crs)
         if i == 3:
             return False
         else:
