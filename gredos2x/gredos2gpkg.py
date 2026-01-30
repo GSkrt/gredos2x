@@ -34,15 +34,13 @@ from shutil import which
 class Gredos2GPKG:
     """
         Gredos2GPKG je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo v GPKG datoteko, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.
-        Jedro uvoza je sestavljeno tako, da deluje tudi na linux sistemu. Pri tem je potrebno imeti instaliran mdb-tools paket za linux. 
-        Za debian sistme se ga namesti z : sudo apt install mdb-tools 
+        Jedro uvoza je sestavljeno tako, da deluje tudi na linux sistemu. Pri tem je potrebno imeti instaliran mdb-tools paket za linux.
+        Za debian sistme se ga namesti z : sudo apt install mdb-tools
         
-        Args: 
-        
-            povezava_mdb (string) : povezava do mdb datoteke osnovnega modela
-            pot_materiali (string) : povezava do datoteke materialov (npr.material_2000_v10.mdb)
-            gpkg_ime (string) : ime in lokacija datoteke GPKG npr. izvoz.gpkg
-            insert_strategy (string)
+        Args:
+            povezava_mdb (str): povezava do mdb datoteke osnovnega modela
+            pot_materiali (str): povezava do datoteke materialov (npr.material_2000_v10.mdb)
+            povezava_gpkg (str): ime in lokacija datoteke GPKG npr. izvoz.gpkg
     """
     def __init__(self, povezava_mdb='', pot_materiali='', povezava_gpkg=''):
         self.mdb_povezava = os.path.normpath(povezava_mdb)
@@ -93,8 +91,8 @@ class Gredos2GPKG:
     def pd_dataframe_to_gpkg(self, pd_dataframe, geopackage_pth, table_name):
         """Transfer pandas dataframe to geopackage.
 
-        Args:
-            pd_dataframe (pd.DataFrame): dataframe to transfer
+        Args: 
+            pd_dataframe (pandas.DataFrame): dataframe to transfer
             geopackage_pth (str): location of geopackage file 
             table_name (str):  table name
         """
@@ -103,13 +101,13 @@ class Gredos2GPKG:
         pd_dataframe.to_sql(table_name, engine, if_exists='replace', index=False)
 
     def shp_to_geopackage(self,filepath_shp, geopackage_pth, layer_name, pretvori_crs = False, set_crs = 'EPSG:3912', input_encoding='cp1250'):
-        """ Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih. 
+        """Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih.
 
         Args:
-            filepath_shp (_type_): lokacija shp datoteke za pretvorbo 
-            geopackage_pth (_type_): lokacija gpkg datoteke za izvoz 
-            layer_name (_type_): ime plasti v gpkg datoteki 
-            crs_conversion (bool, optional): Pretvori v drug koordinatni sistem (True/False). Defaults to False.
+            filepath_shp (str): lokacija shp datoteke za pretvorbo
+            geopackage_pth (str): lokacija gpkg datoteke za izvoz
+            layer_name (str): ime plasti v gpkg datoteki
+            pretvori_crs (bool, optional): Pretvori v drug koordinatni sistem (True/False). Defaults to False.
             set_crs (str, optional): Izhodni koordinatni sistem. Defaults to 'EPSG:3912'. Pretvorba je zanimiva predvsem v 'EPSG:3794'
             input_encoding (str, optional): Encoding for the input SHP file. Defaults to 'cp1250'.
         """
@@ -122,10 +120,9 @@ class Gredos2GPKG:
 
     def uvozi_podatke_mdb(self, show_progress = False):
         """Osnovna funkcija za uvoz podatkov. Imena uvoznih tabel so predefinirana, prav tako format in tip podatkov uvoza. Pomembno, ker so nekateri modeli s šiframi v drugih formatih.
-
-            Args: 
-            
-                show_progress(bool): V terminalu prikaže proces nalaganja posamezne tabele ali seznam vseh tabel (samo linux). 
+        
+        Args:
+            show_progress (bool): V terminalu prikaže proces nalaganja posamezne tabele ali seznam vseh tabel (samo linux).
         
         """
         if os.path.exists(self.mdb_povezava):
@@ -167,7 +164,7 @@ class Gredos2GPKG:
                   
             
     def zgradi_indekse_tabelam(self): 
-        """
+        """ 
             Zgradi indekse tabelam za hitrejše branje in poizvedbe po podatkovni bazi. 
         """
         
@@ -194,9 +191,9 @@ class Gredos2GPKG:
     def uvozi_podatke_materialov_mdb(self):
         """
             Metoda razreda za uvoz podatkov materialov iz Gredos v gpkg datoteko. Datoteke na Windows platformi beremo z {Microsoft Access Driver (*.mdb, *.accdb)}, 
-            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools. 
+            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools.
             
-            Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults 
+            Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults
             
         """
         
@@ -234,18 +231,16 @@ class Gredos2GPKG:
     def uvozi_geografske_datoteke(self, show_progress=False, pretvori_crs = False, set_crs='EPSG:3794'):
         """
         
-         Uvozi podatke SHP gredos  kot  geografsko plast  v  datoteko. Pot do datoteke je definirana s spremenljivko razreda self.gpkg_path. 
-         v Default EPSG koda je 3912 (GK48), med prenosom je možna pretvorba iz tega v drug koordinatni sistem, ki je kompatibilen z GIS ali 
-         drugimi prikazovalniki, ki imajo npr. podlago za prikaz v WGS84. S tem smo pokrili večino uporabniških primerov. 
+         Uvozi podatke SHP gredos  kot  geografsko plast  v  datoteko. Pot do datoteke je definirana s spremenljivko razreda self.gpkg_path.
+         v Default EPSG koda je 3912 (GK48), med prenosom je možna pretvorba iz tega v drug koordinatni sistem, ki je kompatibilen z GIS ali
+         drugimi prikazovalniki, ki imajo npr. podlago za prikaz v WGS84. S tem smo pokrili večino uporabniških primerov.
         
         Args:
-            
             show_progress (bool, optional): Prikaži napredek uvoza. Defaults to False.
             pretvori_crs (bool, optional): Pretvori v drug crs (default 3794). Defaults to True.
-            set_crs (string, optional): Sets CRS of conversion data. 
-            
+            set_crs (str, optional): Sets CRS of conversion data.
         Returns:
-            True, če je število uvoženih SHP datotek pod 3 (POINT, LNODE, LINE). Če bi se v imeniku nahajalo več datotek SHP bi tako vrnil napako. 
+            bool: True, če je število uvoženih SHP datotek pod 3 (POINT, LNODE, LINE). Če bi se v imeniku nahajalo več datotek SHP bi tako vrnil napako.
             Slednje se običajno zgodi, ko je v uvoznem imeniku, kjer se nahaja temeljna mdb datoteka več datotek. 
         """
 
@@ -280,15 +275,15 @@ class Gredos2GPKG:
 
     def pozeni_uvoz(self, show_progress = False, pretvori_crs = False, set_crs = 'EPSG:3794'):
         """ Izvozi vse podatke Gredos v lokalno GPKG datoteko na disku, glede na nastavljeno lokacijo. 
-            Omogoča tudi pretvorbo koordinatnega sistema v druge oblike npr. WGS84 za spletne aplikacije ali EPSG:3794 (D96/TM Slovenski koordinatni sistem)
+            Omogoča tudi pretvorbo koordinatnega sistema v druge oblike npr. WGS84 za spletne aplikacije ali EPSG:3794 (D96/TM Slovenski koordinatni sistem).
 
 
         Args:
             show_progress (bool, optional): med izvozom prikazuj obvestila v terminalu.
-            pretvori_crs (bool, optional): pretvori v drug koordinatni sistem npr. wgs84 (EPSG:4326) ali epsg: 3794 (Geodetic CRS: Slovenia 1996)
-
+            pretvori_crs (bool, optional): pretvori v drug koordinatni sistem npr. wgs84 (EPSG:4326) ali epsg: 3794 (Geodetic CRS: Slovenia 1996).
+            set_crs (str): crs string npr. EPSG:3912 (izvorni crs).
         Returns:
-            uvozeno (bool) : True, če je geografske datoteke ustrezno uvozilo
+            bool: True, če je geografske datoteke ustrezno uvozilo.
         """
         
         uvozeno = self.uvozi_geografske_datoteke(show_progress, pretvori_crs=pretvori_crs, set_crs = set_crs)

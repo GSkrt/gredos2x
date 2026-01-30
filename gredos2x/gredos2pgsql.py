@@ -32,24 +32,24 @@ class Gredos2PGSQL:
     """
         Gredos2PGSQL je orodje ETL za izvoz modela energetskega sistema Gredos in pretvorbo tabel v Postgresql, ki združuje vse razpoložljive podatkovne vire za gradnjo modela.
         Poleg definicije povezav in parametrov baze, je potrebno določiti tudi ime sheme, kamor se podatki shranjujejo. Gre za osnovni prenos podatkov in ne za podatkovno vodenje
-        tabel v bazi.  
+        tabel v bazi.
         
         
-        Jedro uvoza je sestavljeno tako, da deluje tudi na linux sistemu. Pri tem je potrebno imeti instaliran mdb-tools paket za linux. 
-        Za debian sistme se ga namesti z : sudo apt install mdb-tools (Debian). Na Windows sistemu uporabimo ""Microsoft Access Driver (*.mdb, *.accdb)", ki ga dobimo poleg 
-        acess programa ali pa ga instaliramo posebej.  
+        Jedro uvoza je sestavljeno tako, da deluje tudi na linux sistemu. Pri tem je potrebno imeti instaliran mdb-tools paket za linux.
+        Za debian sistme se ga namesti z : sudo apt install mdb-tools (Debian). Na Windows sistemu uporabimo ""Microsoft Access Driver (*.mdb, *.accdb)", ki ga dobimo poleg
+        acess programa ali pa ga instaliramo posebej.
         
-        Pri inicializaciji razreda se preveri tudi povezava. V kolikor povezava ni uspešna se rezultat izpiše v terminalu. 
+        Pri inicializaciji razreda se preveri tudi povezava. V kolikor povezava ni uspešna se rezultat izpiše v terminalu.
         
-        Prilagojena je za Linux in Windows OS. 
+        Prilagojena je za Linux in Windows OS.
         
-        Args: 
-        
-            povezava_mdb (string) : povezava do mdb datoteke osnovnega modela (mdb)
-            pot_materiali (string) : povezava do datoteke materialov (npr.material_2000_v10.mdb)
-            parametri_povezave (dict) : parametri povezave postgresql (klasični zapis, port kot textualni vnos)
-            
-            parametri_povezave_pgsql = {
+        Args:
+            povezava_mdb (str): povezava do mdb datoteke osnovnega modela (mdb)
+            pot_materiali (str): povezava do datoteke materialov (npr.material_2000_v10.mdb)
+            parametri_povezave_pgsql (dict): parametri povezave postgresql (klasični zapis, port kot textualni vnos)
+            ime_sheme (str): ime sheme v postgresql bazi, kamor se bodo tabele izvozile
+
+            Primer `parametri_povezave_pgsql`:
                 "drivername": "postgresql+psycopg2",
                 "username": "vpisi_uporabnisko_ime_s_pravicami_za_pisanje",
                 "password": "geslo",
@@ -57,8 +57,6 @@ class Gredos2PGSQL:
                 "port": "vrata", - pazi kot tekst !!! 
                 "database": "podatkovna_baza"
             }
-            ime_sheme (string): ime sheme v postgresql bazi, kamor se bodo tabele izvozile
-            
     """
     def __init__(self, povezava_mdb='', pot_materiali='', parametri_povezave_pgsql = {}, ime_sheme='public'):
         self.mdb_povezava = os.path.normpath(povezava_mdb)
@@ -125,12 +123,12 @@ class Gredos2PGSQL:
     def check_schema_exists(self,engine, schema_name):
         """Preveri ali shema v bazi obstaja. 
 
-        Args:
-            engine (_type_): Sqlalchemy engine
-            schema_name (_type_): ime sheme
+        Args: 
+            engine (sqlalchemy.engine.base.Engine): Sqlalchemy engine
+            schema_name (str): ime sheme
 
         Returns:
-            _type_: True, če shema obstaja...
+            bool: True, če shema obstaja...
         """
         try:
             with engine.connect() as connection:
@@ -146,8 +144,8 @@ class Gredos2PGSQL:
     def pd_dataframe_v_pgsql(self, pd_dataframe, pgsql_engine, table_name):
         """Shrani datoteke v podatkovno bazo. 
 
-        Args:
-            pd_dataframe (pd.DataFrame): dataframe to transfer
+        Args: 
+            pd_dataframe (pandas.DataFrame): dataframe to transfer
             pgsql_engine (sqlachemy engine): sqlalchemy postgresql engine 
             table_name (str):  table name
         """
@@ -164,12 +162,11 @@ class Gredos2PGSQL:
 
     def shp_to_pgsql(self,filepath_shp, ime_tabele, pretvori_crs = False, set_crs = 'EPSG:3794'):
         """Pretvorba iz SHP v geodataframe. Ta metoda razreda ni uporabljena direktno, lahko pa se jo uporabo ob morebitnih novih virih. 
-            Uporablja spremenljivko razreda self.pgsql_engine za povezavo s postgresql bazo. Potrebno pa je definirati shemo v bazi, ki mora predhodno obstajati
+            Uporablja spremenljivko razreda self.pgsql_engine za povezavo s postgresql bazo. Potrebno pa je definirati shemo v bazi, ki mora predhodno obstajati.
 
         Args:
-            filepath_shp (_type_): _lokacija shp datoteke_
-            ime_tabele (_type_): Ime tabele za izvoz
-            ime_sheme (str, optional): Osnovna shema je nastavljena na 'public', ki je prisotna v vseh bazah. Defaults to 'public'.
+            filepath_shp (str): lokacija shp datoteke
+            ime_tabele (str): Ime tabele za izvoz
             pretvori_crs (bool, optional): _Pretvori crs pri izvozu ?_. Defaults to False.
             set_crs (str, optional): Izhodni koordinatni sistem. Defaults to 'EPSG:3912'. Pretvorba je zanimiva predvsem v 'EPSG:3794'
         """
@@ -191,11 +188,10 @@ class Gredos2PGSQL:
 
     def mdb_2_pgsql(self, show_progress = False):
         """Osnovna funkcija za uvoz podatkov. Imena uvoznih tabel so predefinirana, prav tako format in tip podatkov uvoza. Pomembno, ker so nekateri modeli s šiframi v drugih formatih.
-           Osnovni spisek imen tabel v mdb je definiran spremenljivki razreda spisek_tabel. 
+           Osnovni spisek imen tabel v mdb je definiran spremenljivki razreda spisek_tabel.
 
-            Args: 
-            
-                show_progress(bool): V terminalu prikaže proces nalaganja posamezne tabele ali seznam vseh tabel (samo linux). 
+        Args:
+            show_progress (bool): V terminalu prikaže proces nalaganja posamezne tabele ali seznam vseh tabel (samo linux).
         
         """
         if os.path.exists(self.mdb_povezava):
@@ -239,9 +235,9 @@ class Gredos2PGSQL:
     def uvozi_podatke_materialov_mdb(self):
         """
             Metoda razreda za uvoz podatkov materialov iz Gredos v postgresql bazo. Datoteke na Windows platformi beremo z {Microsoft Access Driver (*.mdb, *.accdb)}, 
-            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools. 
+            uvoz podatkov na linux platformi pa temelji na osnovi mdb-tools.
             
-            Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults 
+            Datoteka materialov se običajno v distribuciji Gredos nahaja v imeniku C:\GredosMO\Defaults
             
         """
         
@@ -275,17 +271,16 @@ class Gredos2PGSQL:
     def uvozi_geografske_datoteke(self, show_progress=False, pretvori_crs = False, set_crs='EPSG:3794'):
         """
         
-         Uvozi podatke SHP gredos  kot  geografsko plast  v  postgresql. 
-         v Default EPSG koda je 3912 (GK48), med prenosom je možna pretvorba iz tega v drug koordinatni sistem, ki je kompatibilen z GIS ali 
-         drugimi prikazovalniki, ki imajo npr. podlago za prikaz v WGS84. S tem smo pokrili večino uporabniških primerov. 
+         Uvozi podatke SHP gredos  kot  geografsko plast  v  postgresql.
+         v Default EPSG koda je 3912 (GK48), med prenosom je možna pretvorba iz tega v drug koordinatni sistem, ki je kompatibilen z GIS ali
+         drugimi prikazovalniki, ki imajo npr. podlago za prikaz v WGS84. S tem smo pokrili večino uporabniških primerov.
         
         Args:
             show_progress (bool, optional): Prikaži napredek uvoza. Defaults to False.
             pretvori_crs (bool, optional): Pretvori v drug crs (default 3794). Defaults to True.
-            set_crs (string, optional): Sets CRS of conversion data. 
-            
+            set_crs (str, optional): Sets CRS of conversion data.
         Returns:
-            True, če je število uvoženih SHP datotek pod 3 (POINT, LNODE, LINE). Če bi se v imeniku nahajalo več datotek SHP bi tako vrnil napako. 
+            bool: True, če je število uvoženih SHP datotek pod 3 (POINT, LNODE, LINE). Če bi se v imeniku nahajalo več datotek SHP bi tako vrnil napako.
             Slednje se običajno zgodi, ko je v uvoznem imeniku, kjer se nahaja temeljna mdb datoteka več datotek. 
         """
 
@@ -323,16 +318,15 @@ class Gredos2PGSQL:
 
     def pozeni_uvoz(self, show_progress = False, pretvori_crs = False, set_crs = 'EPSG:3794'):
         """ Izvozi vse podatke Gredos v lokalno posgis podatkovno bazo, pret tem je potrebno definirati shemo v katero bomo izvažali podatke. 
-            Omogoča tudi pretvorbo koordinatnega sistema v druge oblike npr. WGS84 za spletne aplikacije ali EPSG:3794 (D96/TM Slovenski koordinatni sistem)
+            Omogoča tudi pretvorbo koordinatnega sistema v druge oblike npr. WGS84 za spletne aplikacije ali EPSG:3794 (D96/TM Slovenski koordinatni sistem).
 
 
         Args:
             show_progress (bool, optional): med izvozom prikazuj obvestila v terminalu.
-            pretvori_crs (bool, optional): pretvori v drug koordinatni sistem npr. wgs84 (EPSG:4326) ali epsg: 3794 (Geodetic CRS: Slovenia 1996)
-            set_crs (str): crs string npr. EPSG:3912 (izvorni crs)
-
+            pretvori_crs (bool, optional): pretvori v drug koordinatni sistem npr. wgs84 (EPSG:4326) ali epsg: 3794 (Geodetic CRS: Slovenia 1996).
+            set_crs (str): crs string npr. EPSG:3912 (izvorni crs).
         Returns:
-            uvozeno (bool) : True, če je geografske datoteke ustrezno uvozilo
+            bool: True, če je geografske datoteke ustrezno uvozilo.
         """
         
         uvozeno = self.uvozi_geografske_datoteke(show_progress=True, pretvori_crs=pretvori_crs, set_crs=set_crs)
