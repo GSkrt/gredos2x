@@ -5,7 +5,12 @@ import fiona
 import sqlite3
 
 class GredosGPKG2df(): 
-    def __init__(self, povezava_gpkg='base.gpkg', pregled_vsebine = False): 
+    def __init__(self, povezava_gpkg='base.gpkg', pregled_vsebine=False):
+        """
+        Args:
+            povezava_gpkg (str, optional): Pot do GPKG datoteke. Defaults to 'base.gpkg'.
+            pregled_vsebine (bool, optional): Če je True, se izpišejo glave tabel za razhroščevanje. Defaults to False.
+        """
         self.gpkg_povezava = povezava_gpkg
         self.debug = pregled_vsebine
         
@@ -13,16 +18,18 @@ class GredosGPKG2df():
         """ Preglej vse tabele, ki so shranjene v GPKG datoteki. 
 
         Returns:
-            list: list of layers stored in GPKG database 
+            list: Seznam plasti (tabel) shranjenih v GPKG datoteki.
         """
         layers =fiona.listlayers(self.gpkg_povezava)
         return layers
     
     def nalozi_negeografsko_tabelo(self,ime_tabele:str): 
-        """Uvoz negeografske tabele v klasičen pandas dataframe (npr.'LNode', 'Node', 'Section', 'Transformer', 'Switching_device', 'Branch', 'MATERIAL' )
+        """Uvoz negeografske tabele v klasičen pandas dataframe (npr.'LNode', 'Node', 'Section', 'Transformer', 'Switching_device', 'Branch', 'MATERIAL').
 
         Args:
             ime_tabele (str): Ime tabele za uvoz, pregled tabel uporabimo metodo list_gpkg_tables
+        Returns:
+            pandas.DataFrame or None: Pandas DataFrame, če je uvoz uspešen, sicer None.
         """
         try:
             # Connect to the SQLite database
@@ -58,12 +65,11 @@ class GredosGPKG2df():
         """
         Preberi geografsko tabelo iz gpkg. Geografske tabele imajo pri ustvarjanju oznako _geo
         
-        Keyword arguments:
-        
-        layer_name (str): ime plasti za uvoz
-        epsg_set (str, optional): EPSG koda koordinatnega sistema, ki je vsebovana v GPKG datoteki. Defaults to 'EPSG:3912'.
-
-        Return: geodataframe s predpisanim koordinatnim sistemom 
+        Args:
+            layer_name (str): ime plasti za uvoz
+            epsg_set (str, optional): EPSG koda koordinatnega sistema, ki je vsebovana v GPKG datoteki. Defaults to 'EPSG:3912'.
+        Returns:
+            geopandas.GeoDataFrame: Geodataframe s predpisanim koordinatnim sistemom.
         """
                   
         try:
