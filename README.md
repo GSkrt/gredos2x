@@ -1,6 +1,8 @@
-# GREDOS2X (v 2.1.0) - Pretvornik Gredos modela v druge formate 
+# GREDOS2X (v 2.1.1) - Pretvornik Gredos modela v druge formate 
 
 Posodobitve : 
+
+**v2.1.1**: Samo popravek README (brez sprememb kode).
 
 **v2.1.0**: Popravljen in preverjen izvoz na Linuxu (mdb-tools pot v `gredos2pgsql.py`) - obnovljena podpora za `suffix_tabel`, samodejna izdelava ciljne sheme in omogočanje PostGIS razširitve, popravljena pretvorba MS Access Yes/No (boolean) polj (npr. `Branch.Feeder`, `Node.Consumption`), ki so prej na Linuxu pomotoma pristala kot `bigint`. Obnovljena izdelava `gid` primarnega ključa in prostorskega (GIST) indeksa pri `shp_to_pgsql`. Dodana nova metoda `ustvari_indekse_na_kljucnih_stolpcih()`, ki po vsakem uvozu samodejno indeksira stolpce `NodeId`, `Node1`, `Node2` in `XDbId`.
 
@@ -53,7 +55,7 @@ V izhodišču model tako zgolj pretvarja podatkovna izhodišča Gredos v združe
         pip install gredos2x (naložen na pypi)
 
         Za lokalno instalacijo iz dist/ mape 
-       ``` # pip install dist/gredos2x-2.1.0-py3-none-any.whl ```
+       ``` # pip install dist/gredos2x-2.1.1-py3-none-any.whl ```
 
 
 
