@@ -17,7 +17,7 @@
 
 import os
 import urllib
-from sqlalchemy import create_engine, exc
+from sqlalchemy import create_engine, exc, bindparam
 from sqlalchemy.engine import URL
 from sqlalchemy.sql import text
 import geopandas as gpd
@@ -65,7 +65,8 @@ class Gredos2PGSQL:
         self.spisek_tabel = ['LNode', 'Node', 'Section', 'Transformer', 'Switching_device','Branch']
         self.mdb_driver = "Microsoft Access Driver (*.mdb, *.accdb)"
         self.ime_sheme = ime_sheme
-        if parametri_povezave_pgsql: 
+        self.suffix_tabel = ''
+        if parametri_povezave_pgsql:
             self.dict_povezava = parametri_povezave_pgsql
         else:             
             self.dict_povezava = {
@@ -110,13 +111,29 @@ class Gredos2PGSQL:
             print(f"An error occurred while connecting to the database: {e}")
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
-            
+
+        # Poskrbimo, da je razširitev PostGIS omogočena (geometry stolpci jo zahtevajo)
+        try:
+            with self.pgsql_engine.connect() as connection:
+                connection.execute(text('CREATE EXTENSION IF NOT EXISTS postgis;'))
+                connection.commit()
+        except exc.SQLAlchemyError as e:
+            print(f"Razširitve PostGIS ni bilo mogoče omogočiti (preveri uporabniške pravice): {e}")
+
         shema_exists = self.check_schema_exists(self.pgsql_engine, self.ime_sheme)
             
-        if shema_exists: 
+        if shema_exists:
             pass
-        else: 
-            print(f"Shema {self.ime_sheme} ni v podatkovni bazi.Potrebno jo je še ustvariti")
+        else:
+            print(f"Shema {self.ime_sheme} ni v podatkovni bazi. Ustvarjam shemo...")
+            try:
+                quoted_schema = '"' + self.ime_sheme.replace('"', '""') + '"'
+                with self.pgsql_engine.connect() as connection:
+                    connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS {quoted_schema};'))
+                    connection.commit()
+                print(f"Shema {self.ime_sheme} je bila uspešno ustvarjena.")
+            except exc.SQLAlchemyError as e:
+                print(f"Sheme {self.ime_sheme} ni bilo mogoče ustvariti: {e}")
         
         
         
@@ -178,9 +195,22 @@ class Gredos2PGSQL:
             set_crs = 'EPSG:3912' #pustimo crs v obliki, ki jo ima trenutno Gredos
         
         
+        # Add 'gid' column to serve as a unique primary key for QGIS
+        shp.index.name = 'gid'
+        shp = shp.reset_index()
+
         shp.to_postgis(ime_tabele, self.pgsql_engine, if_exists= 'replace', schema = self.ime_sheme, index = False, chunksize = 10000)
-        
+
         with self.pgsql_engine.connect() as connection:
+            # Set primary key
+            sql_pk = text(f'ALTER TABLE "{self.ime_sheme}"."{ime_tabele}" ADD PRIMARY KEY (gid);')
+            connection.execute(sql_pk)
+
+            # Create spatial index
+            geom_col = shp.active_geometry_name
+            sql_idx = text(f'CREATE INDEX IF NOT EXISTS "sidx_{ime_tabele}_{geom_col}" ON "{self.ime_sheme}"."{ime_tabele}" USING GIST ("{geom_col}");')
+            connection.execute(sql_idx)
+
             comment = f"Source MDB: {self.mdb_povezava}".replace("'", "''")
             sql = text(f'COMMENT ON TABLE "{self.ime_sheme}"."{ime_tabele}" IS \'{comment}\';')
             connection.execute(sql)
@@ -201,7 +231,7 @@ class Gredos2PGSQL:
                         print(f"Uvažam tabelo {ime_tabele_v_bazi} v Windows okolju.")
                     sql = text(f"select * from {ime_tabele_v_bazi}")
                     pd_tabela = pd.read_sql_query(sql, self.connection_mdb)
-                    self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi)
+                    self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi+self.suffix_tabel)
             if sys.platform.startswith('linux'):
                 available_tables = subprocess.Popen(["mdb-tables", self.mdb_povezava],
                                         stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
@@ -217,18 +247,23 @@ class Gredos2PGSQL:
                         
                         # weird import declarations (String IDs with numbers only - Only in Gredos ?!)
                         types = None
-                        if ime_tabele_v_bazi.startswith('Node'): 
-                            
-                            types = {'NodeId':str, 'LNodeId': str, 'XDbId':str, 'OrgId':str}
-                        if ime_tabele_v_bazi.startswith('Branch'): 
-                            types = {'BranchId': str, 'FeederBrId':str, 'XDbId':str, 'Node1':str, 'Node2':str}
+                        if ime_tabele_v_bazi.startswith('Node'):
+                            # Access Yes/No (boolean) polja so v mdb-export CSV izvozu -1 (Yes) / 0 (No),
+                            # pretvorimo jih v pravi bool, da se ujema s stolpcem, ki ga na Windows ustvari ODBC gonilnik.
+                            types = {'NodeId':str, 'LNodeId': str, 'XDbId':str, 'OrgId':str,
+                                     'Consumption': lambda x: x.strip() not in ('', '0', 'False', 'false')}
+                        if ime_tabele_v_bazi.startswith('Branch'):
+                            # Access Yes/No (boolean) polja so v mdb-export CSV izvozu -1 (Yes) / 0 (No),
+                            # pretvorimo jih v pravi bool, da se ujema s stolpcem, ki ga na Windows ustvari ODBC gonilnik.
+                            types = {'BranchId': str, 'FeederBrId':str, 'XDbId':str, 'Node1':str, 'Node2':str,
+                                     'Feeder': lambda x: x.strip() not in ('', '0', 'False', 'false')}
                         if ime_tabele_v_bazi.startswith('LNode'): 
                             types = {'LNodeId': str, 'OrgId':str}
                         if ime_tabele_v_bazi.startswith('Section'): 
                             types = {'BranchId': str}
                             
                         pd_tabela = pd.read_csv(io.StringIO(str(contents)),sep=',', header=0, converters=types, encoding='cp1250', index_col=False, engine='python')
-                        self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi)
+                        self.pd_dataframe_v_pgsql(pd_tabela, self.pgsql_engine, ime_tabele_v_bazi+self.suffix_tabel)
                   
             
 
@@ -295,26 +330,45 @@ class Gredos2PGSQL:
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='POINT_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='POINT_geo'+self.suffix_tabel ,pretvori_crs=pretvori_crs, set_crs=set_crs)
                     
             if 'LINE' in splitfile[0]:
                 i = i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LINE_geo' ,pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LINE_geo'+self.suffix_tabel ,pretvori_crs=pretvori_crs, set_crs=set_crs)
                     
             if 'LNODE' in splitfile[0]:
                 i=i + 1
                 if 'shp' in splitfile[1]:
                     if show_progress: 
                         print(f"Uvažam: {file}")
-                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LNODE_geo', pretvori_crs=pretvori_crs, set_crs=set_crs)
+                    self.shp_to_pgsql(os.path.join(imenik_projekta,file), ime_tabele='LNODE_geo'+self.suffix_tabel, pretvori_crs=pretvori_crs, set_crs=set_crs)
                    
         if i == 3:
             return False
         else:
             return True
+
+    def ustvari_indekse_na_kljucnih_stolpcih(self):
+        """Ustvari btree indekse na stolpcih, ki se najpogosteje uporabljajo za JOIN med tabelami
+        (NodeId, Node1, Node2, XDbId), na vseh tabelah v shemi, kjer ti stolpci obstajajo."""
+        kljucni_stolpci = ['NodeId', 'Node1', 'Node2', 'XDbId']
+        query = text("""
+            SELECT table_name, column_name FROM information_schema.columns
+            WHERE table_schema = :schema AND column_name IN :stolpci;
+        """).bindparams(bindparam('stolpci', expanding=True))
+
+        with self.pgsql_engine.connect() as connection:
+            najdeni = connection.execute(query, {"schema": self.ime_sheme, "stolpci": kljucni_stolpci}).fetchall()
+            for table_name, column_name in najdeni:
+                index_name = f"idx_{table_name}_{column_name}"
+                sql = text(
+                    f'CREATE INDEX IF NOT EXISTS "{index_name}" ON "{self.ime_sheme}"."{table_name}" ("{column_name}");'
+                )
+                connection.execute(sql)
+            connection.commit()
 
     def pozeni_uvoz(self, show_progress = False, pretvori_crs = False, set_crs = 'EPSG:3794'):
         """ Izvozi vse podatke Gredos v lokalno posgis podatkovno bazo, pret tem je potrebno definirati shemo v katero bomo izvažali podatke. 
@@ -332,6 +386,6 @@ class Gredos2PGSQL:
         uvozeno = self.uvozi_geografske_datoteke(show_progress=True, pretvori_crs=pretvori_crs, set_crs=set_crs)
         self.mdb_2_pgsql(show_progress=True)
         self.uvozi_podatke_materialov_mdb()
-        
+        self.ustvari_indekse_na_kljucnih_stolpcih()
 
         return uvozeno
